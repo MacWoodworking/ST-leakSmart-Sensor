@@ -1,6 +1,7 @@
 /*
  * leakSmart Sensor
  *
+ * Version 1.2.5 - Fixed Temperature reporting issue on Hubitat platform. (05/12/2020)
  * Version 1.2.4 - Various improvements, details below. (08/13/2018)
  *   Fixed battery percentage rounding error that caused the battery to read 0% on occasion.
  *   Updated logging prefixes.
@@ -337,7 +338,7 @@ private Map parseReportAttributeMessage(String description) {
 	log("map = ${map}", "DEBUG")
     
     if (descMap.cluster.toLowerCase() == "0402" && descMap.attrId.toLowerCase() == "0000") {
-        def value = getTemperature(descMap.value)
+        def value = getTemperature(swapEndianHex(descMap.value))
         resultMap = getTemperatureResult(value)
     } else if (descMap.cluster.toLowerCase() == "0001" && descMap.attrId.toLowerCase() == "0020") {
     	resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
