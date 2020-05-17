@@ -1,6 +1,7 @@
 /*
  * leakSmart Sensor
  *
+ * Version 1.2.6 - Fixed missing temperature and battery units. (05/17/2020)
  * Version 1.2.5 - Fixed Temperature reporting issue on Hubitat platform. (05/12/2020)
  * Version 1.2.4 - Various improvements, details below. (08/13/2018)
  *   Fixed battery percentage rounding error that caused the battery to read 0% on occasion.
@@ -57,7 +58,7 @@
  *
  */
 
-public static String version() { return "v1.2.4.20180813" }
+public static String version() { return "v1.2.6.20200517" }
 
 metadata {
     definition (name: "leakSmart Sensor", namespace: "ericvitale", author: "ericvitale@gmail.com", category: "C2") {
@@ -130,7 +131,7 @@ metadata {
         }
 
         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-            state "battery", label:'${currentValue}% battery', unit:""
+            state "battery", label:'${currentValue}% battery', unit:"%"
         }
 
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -279,6 +280,7 @@ def parse(String description) {
 }
 
 private Map parseCatchAllMessage(String description) {
+    log("Begin parseCatchAllMessage ${description}.", "DEBUG");
     Map resultMap = [:]
     def cluster = zigbee.parse(description)
     if (shouldProcessMessage(cluster)) {
@@ -330,7 +332,7 @@ private Map parseReportAttributeMessage(String description) {
         def nameAndValue = param.split(":")
         map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
     }
-	
+	log("Begin parseReportAttributeMessage ${description}.", "DEBUG");
     log("Desc Map: $descMap.", "DEBUG")
 
     Map resultMap = [:]
@@ -360,7 +362,7 @@ private Map parseReportAttributeMessage(String description) {
 
 private Map parseCustomMessage(String description) {
     Map resultMap = [:]
-    
+    log("Begin parseCustomMessage ${description}.", "DEBUG");
     if (description?.startsWith('temperature: ')) {
     	def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
     	resultMap = getTemperatureResult(value)
@@ -370,7 +372,11 @@ private Map parseCustomMessage(String description) {
 }
 
 def getTemperature(value) {
-    def celsius = Integer.parseInt(value, 16).shortValue() / 100
+    def tempC = hexStrToSignedInt(value) / 100
+    def tempCValue = convertTemperatureIfNeeded(tempC.toFloat(),"c",2)
+    def unit = "°${location.temperatureScale}"
+    def descriptionText = "${device.displayName} temperature is ${tempCValue}${unit}"
+    log("${descriptionText}", "DEBUG")
     
     log("${getVersionStatementString()}", "INFO")
     
@@ -381,14 +387,7 @@ def getTemperature(value) {
             log("Device being reconfigured.", "INFO")
             return response(configure())
     }
-    
-    if(getTemperatureScale() == "C") {
-    	log("Temperature Reported: ${celsius}C.", "INFO")
-    	return celsius
-    } else {
-    	log("Temperature Reported: ${celsiusToFahrenheit(celsius)}F.", "INFO")
-    	return celsiusToFahrenheit(celsius) as Integer
-    }
+    return tempCValue
 }
 
 private Map getBatteryResult(rawValue) {
@@ -399,6 +398,7 @@ private Map getBatteryResult(rawValue) {
     def result = [
         name: 'battery',
     	value: '--',
+        unit: '%',
     	translatable: true
     ]
 
@@ -414,7 +414,7 @@ private Map getBatteryResult(rawValue) {
             def minVolts = getBottomVolts()
             def maxVolts = getTopVolts()
             def pct = (volts - minVolts) / (maxVolts - minVolts)
-	    result.value = (int)Math.round(pct * 100)
+	        result.value = (int)Math.round(pct * 100)
             result.descriptionText = "${device.displayName} battery was ${result.value}%."
         }
     }
@@ -450,6 +450,7 @@ private Map getTemperatureResult(value) {
     return [
         name: 'temperature',
         value: value,
+        unit: "°${location.temperatureScale}",
         descriptionText: descriptionText,
         translatable: true
     ]
