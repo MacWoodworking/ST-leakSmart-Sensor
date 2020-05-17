@@ -37,4 +37,4 @@ There is an optional setting in the device configuration. If you are having issu
 
 
 ## Acknowledgements
-This code is by no means 100% all my work. This device handler is the work of @dhelm2, @John_Luikart, & @krlaframboise.
+This code is by no means 100% all my work. This device handler is the work of @ericvitale, @dhelm2, @John_Luikart, & @krlaframboise.
