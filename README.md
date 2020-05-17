@@ -1,7 +1,7 @@
 # ST-leakSmart-Sensor
 
 ## Summary
-This SmartThings device handler is meant for the leakSmart Sensor.
+This SmartThings device handler has been modified for Hubitat Platform
 
 ## Installation via GitHub Integration
 1. Open SmartThings IDE in your web browser and log into your account.
